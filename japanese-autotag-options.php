@@ -52,6 +52,24 @@ Tags will be automatically generated every time you publish posts. If you want t
 </p>
 
 </td></tr>
+<tr><td aliggn="top"><p><?php _e('Target Taxonomy'); ?></p></td>
+<td><p><?php _e('Select Target Taxonomy'); ?></p>
+ <?php
+foreach (get_taxonomies('', 'objects') as $taxonomy) {
+//var_dump($taxonomy);
+if ($taxonomy->hierarchical) { // except "category" type, not "tag"
+continue;
+}
+if (isset($target_taxonomies[$taxonomy->name]) &&
+          $target_taxonomies[$taxonomy->name]  == 'on') {
+$checked = 'checked="checked"';
+} else {
+$checked = '';
+}
+?>
+<input type="checkbox" name="target_taxonomies[<?php echo $taxonomy->name;?>]" value="on" <?php echo $checked; ?>><?php echo $taxonomy->labels->name; ?>
+     <?php } ?>
+
 <tr><td valign="top"><p>Word Class:</p></td><td>
 <p>
 Select word classes for tagging. If you uncheck all, all classes can be used.

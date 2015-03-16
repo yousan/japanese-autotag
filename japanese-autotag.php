@@ -31,6 +31,7 @@ class JapaneseAutoTag {
 	var $add_on_save_post;
 	var $parse_body;
 	var $keyphrase_enabled;
+    var $taxonomies = array();
 	var $wc1;
 	var $wc2;
 	var $wc3;
@@ -55,6 +56,7 @@ class JapaneseAutoTag {
 		$this->enabled = $options['enabled'];
 		$this->parse_body = $options['parse_body'];
 		$this->keyphrase_enabled = $options['keyphrase_enabled'];
+        $this->target_taxonomies = $options['target_taxonomies'];
 		$this->wc1 = $options['wc1'];
 		$this->wc2 = $options['wc2'];
 		$this->wc3 = $options['wc3'];
@@ -77,7 +79,7 @@ class JapaneseAutoTag {
 
 	
 	function on_save_post( $post_id ) {
-		
+
 		if( $this->enabled === 'on' 
 			&& $this->add_on_save_post === 'on' ){
 			$this->insert_tags( $post_id );
@@ -87,7 +89,7 @@ class JapaneseAutoTag {
 	
 	
 	function on_publish_post( $post_id ) {
-	
+
 		if( $this->enabled === 'on'
 			&& $this->add_on_publish_post === 'on' 
 			&& $this->add_on_save_post === 'off' ){
@@ -115,6 +117,7 @@ class JapaneseAutoTag {
 			'add_on_save_post' => 'off',
 			'parse_body' => 'off',
 			'keyphrase_enabled' => 'off',
+            'taxonomies' => array(),
 			'wc1' => 'off',
 			'wc2' => 'off',
 			'wc3' => 'off',
@@ -139,7 +142,6 @@ class JapaneseAutoTag {
 		}
 		
 		if( $saved != $options ) {
-		
 			update_option( $this->db_option, $options );
 
 		}
@@ -174,6 +176,8 @@ class JapaneseAutoTag {
 			$options['keyphrase_enabled']
 				= $this->keyphrase_enabled
 				= ($_POST['keyphrase_enabled'] === 'on') ? 'on' : 'off';
+
+            $options['target_taxonomies'] = $this->taxonomies = $_POST['target_taxonomies'];
 				
 			$options['wc1'] = $this->wc1 = ($_POST['wc1'] === 'on') ? 'on' : 'off';
 			$options['wc2'] = $this->wc2 = ($_POST['wc2'] === 'on') ? 'on' : 'off';
@@ -188,7 +192,7 @@ class JapaneseAutoTag {
 			$options['wc11'] = $this->wc11 = ($_POST['wc11'] === 'on') ? 'on' : 'off';
 			$options['wc12'] = $this->wc12 = ($_POST['wc12'] === 'on') ? 'on' : 'off';
 			$options['wc13'] = $this->wc13 = ($_POST['wc13'] === 'on') ? 'on' : 'off';
-			
+
 			update_option( $this->db_option, $options );
 			
 			if ( $options['appkey'] == '' || $this->validate_key( $options['appkey'] ) ) {
@@ -208,6 +212,7 @@ class JapaneseAutoTag {
 		$enabled = $options['enabled'];
 		$action_url = $_SERVER['REQUEST_URI'];
 		$parse_body = $options['parse_body'];
+        $target_taxonomies = $options['target_taxonomies'];
 		$wc1 = $options['wc1'];
 		$wc2 = $options['wc2'];
 		$wc3 = $options['wc3'];
@@ -226,33 +231,39 @@ class JapaneseAutoTag {
 		include ( 'japanese-autotag-options.php' );
 	
 	}
-	
-	
-	function insert_tags( $post_id ) {
 
-		$taxonomy = 'post_tag';
-		$tags = $this->get_tags( $post_id );
-	
-		if( !$tags || 0 == count($tags) ) {
-			return;
-		}
+
+	function insert_tags( $post_id ) {
+        $available_taxonomy = get_post_taxonomies();
+        foreach ($this->target_taxonomies as $taxonomy => $value) {
+            // check the taxonomy to be auto-tagged
+            if ($value == 'on' && in_array($taxonomy, $available_taxonomy)) {
+
+                $tags = $this->get_tags( $post_id );
+                
+                if( !$tags || 0 == count($tags) ) {
+                    return;
+                }
 				
-		foreach( $tags as $t ) {
-			
-			$t = trim($t);
-			
-			$check = is_term( $t, $taxonomy );
-			
-			if( is_null($check) ) {
+                foreach( $tags as $t ) {
+                    
+                    $t = trim($t);
+                    
+                    $check = is_term( $t, $taxonomy );
+                    
+                    if( is_null($check) ) {
+
+                        wp_insert_term( $t, $taxonomy );
+                        
+                    }
+                    
+                }
+
+                $ret = wp_set_post_terms( $post_id, $tags, $taxonomy, true );
 				
-				wp_insert_term( $t, $taxonomy );
-		
-			}
-			
-		}
-		
-		wp_set_post_tags( $post_id, $tags, true );
-				
+            }
+        }
+        
 	}
 	
 	
