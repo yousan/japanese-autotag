@@ -471,7 +471,7 @@ class JapaneseAutoTag {
 		add_options_page( 
 			'Japanese AutoTag Options', 
 			'Japanese AutoTag', 
-			8, 
+			'manage_options',
 			basename(__FILE__), 
 			array(&$this, 'handle_options'));
 	
